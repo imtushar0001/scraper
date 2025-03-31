@@ -48,6 +48,20 @@ def score():
             'https://www.cricbuzz.com/live-cricket-scores/' + id, headers=headers)
         soup = bs(r.content, 'lxml')
         try:
+            commentary_container = soup.find("div", attrs={"class": "cb-col cb-col-100 cb-min-itm cb-com-ln"})
+            latest_commentary = commentary_container.text.strip() if commentary_container else 'Commentary not available'
+            
+            # For more detailed commentary with timestamp
+            detailed_commentary = []
+            commentary_items = soup.find_all("div", attrs={"class": "cb-col cb-col-100 cb-min-itm cb-com-ln"})[:3]  # Get last 3 balls
+            for item in commentary_items:
+                over_info = item.find("div", attrs={"class": "cb-col cb-col-12 cb-text-gray"})
+                commentary_text = item.find("div", attrs={"class": "cb-col cb-col-88"})
+                if over_info and commentary_text:
+                    detailed_commentary.append({
+                        "over": over_info.text.strip(),
+                        "text": commentary_text.text.strip()
+                    })
             update = soup.find_all(
                 "div", attrs={"class": "cb-col cb-col-100 cb-min-stts cb-text-complete"})[0].text.strip() if soup.find_all("div", attrs={"class": "cb-col cb-col-100 cb-min-stts cb-text-complete"}) else 'Match Stats will Update Soon'
             process = soup.find_all(
@@ -220,8 +234,9 @@ def score():
             "bowlertwoover": bowler_two_over,
             "bowlertworun": bowler_two_run,
             "bowlertwowickers": bowler_two_wicket,
-            "bowlertwoeconomy": bowler_two_eco
-
+            "bowlertwoeconomy": bowler_two_eco,
+            'latest_commentary': latest_commentary,
+            'detailed_commentary': detailed_commentary
         })
     else:
         return jsonify({
@@ -261,6 +276,18 @@ def live():
             'https://www.cricbuzz.com/live-cricket-scores/' + id, headers=headers)
         soup = bs(r.content, 'lxml')
         try:
+            commentary_container = soup.find("div", attrs={"class": "cb-col cb-col-100 cb-min-itm cb-com-ln"})
+            latest_commentary = commentary_container.text.strip() if commentary_container else 'Commentary not available'
+            detailed_commentary = []
+            commentary_items = soup.find_all("div", attrs={"class": "cb-col cb-col-100 cb-min-itm cb-com-ln"})[:3]  # Get last 3 balls
+            for item in commentary_items:
+                over_info = item.find("div", attrs={"class": "cb-col cb-col-12 cb-text-gray"})
+                commentary_text = item.find("div", attrs={"class": "cb-col cb-col-88"})
+                if over_info and commentary_text:
+                    detailed_commentary.append({
+                        "over": over_info.text.strip(),
+                        "text": commentary_text.text.strip()
+                    })
             update = soup.find_all(
                 "div", attrs={"class": "cb-col cb-col-100 cb-min-stts cb-text-complete"})[0].text.strip() if soup.find_all("div", attrs={"class": "cb-col cb-col-100 cb-min-stts cb-text-complete"}) else 'Match Stats will Update Soon'
             process = soup.find_all(
@@ -414,6 +441,8 @@ def live():
         return jsonify({
             "success": 'true',
             "livescore": {
+                'latest_commentary': latest_commentary,
+                'detailed_commentary': detailed_commentary,
                 'title': title,
                 'update': status,
                 'current': live_score,
